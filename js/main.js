@@ -1,5 +1,5 @@
 /* ezequiel. — Reflexo
-   espelho d'água (WebGL) + leitor de excertos (Web Audio) */
+   espelho d'água (WebGL) · leitor de excertos (Web Audio) · cordas (Karplus-Strong) */
 (() => {
   'use strict';
 
@@ -18,33 +18,26 @@
   const pad = (n) => String(n).padStart(2, '0');
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ════════════ leitor ════════════ */
+  /* ════════════ áudio partilhado ════════════ */
   const audio = $('#audio');
-  const leitor = $('#leitor');
-  const btnOuvir = $('#ouvir');
-  const btnLeitor = $('#leitor-play');
-  const lista = $('#faixas');
-  let atual = -1, iniciado = false;
-  let ctx = null, analisador = null, filtro = null, espectro = null;
+  let ctx = null, analisador = null, filtro = null, espectro = null, ligado = false;
 
-  const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="p" d="M8 5.5v13l11-6.5z"/></svg>';
-  FAIXAS.forEach(([titulo, dur], i) => {
-    const li = document.createElement('li');
-    li.innerHTML =
-      `<button class="track" type="button" aria-label="Ouvir excerto de ${titulo}">` +
-      `<span class="track-n">${pad(i + 1)}</span><span class="track-t">${titulo}</span>` +
-      `<span class="track-d">${dur}</span>${ICON}</button>`;
-    li.firstChild.addEventListener('click', () => (i === atual ? alternar() : tocar(i)));
-    lista.appendChild(li);
-  });
-  const linhas = [...lista.querySelectorAll('.track')];
+  function contexto() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { ctx = new AC(); } catch (e) { return null; }
+    }
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  }
+  // o primeiro gesto na página desbloqueia o som (para as cordas responderem logo ao rato)
+  const desbloquear = () => contexto();
+  ['pointerdown', 'touchend', 'keydown'].forEach((t) => addEventListener(t, desbloquear, { passive: true }));
 
   function ligarAudio() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
+    if (ligado || !contexto()) return;
     try {
-      ctx = new AC();
       const fonte = ctx.createMediaElementSource(audio);
       analisador = ctx.createAnalyser();
       analisador.fftSize = 1024;
@@ -57,8 +50,39 @@
       fonte.connect(analisador);
       fonte.connect(filtro);
       filtro.connect(ctx.destination);
-    } catch (e) { ctx = null; analisador = null; filtro = null; }
+      ligado = true;
+    } catch (e) { analisador = null; filtro = null; }
   }
+
+  /* ════════════ leitor ════════════ */
+  const leitor = $('#leitor');
+  const hero = $('#espelho');
+  const btnOuvir = $('#ouvir');
+  const btnLeitor = $('#leitor-play');
+  const lista = $('#faixas');
+  const topo = $('#top');
+  let atual = -1, iniciado = false;
+
+  const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>';
+  FAIXAS.forEach(([titulo, dur], i) => {
+    const li = document.createElement('li');
+    li.innerHTML =
+      `<button class="track" type="button" aria-label="Ouvir excerto de ${titulo}">` +
+      `<span class="track-n">${pad(i + 1)}</span><span class="track-t">${titulo}</span>` +
+      `<span class="track-d">${dur}</span>${ICON}</button>`;
+    li.firstChild.addEventListener('click', () => (i === atual ? alternar() : tocar(i)));
+    lista.appendChild(li);
+  });
+  const linhas = [...lista.querySelectorAll('.track')];
+
+  // o leitor flutuante só aparece depois de se sair do espelho, onde já existe o botão de ouvir
+  function aoRolar() {
+    const longe = scrollY > innerHeight * 0.55;
+    topo.classList.toggle('solid', longe);
+    leitor.classList.toggle('open', iniciado && longe);
+  }
+  addEventListener('scroll', aoRolar, { passive: true });
+  aoRolar();
 
   function tocar(i) {
     ligarAudio();
@@ -70,7 +94,7 @@
     linhas.forEach((l, k) => l.classList.toggle('on', k === i));
     leitor.hidden = false;
     iniciado = true;
-    document.getElementById('espelho').classList.add('a-ouvir');
+    hero.classList.add('a-ouvir');
     requestAnimationFrame(aoRolar);
   }
   function alternar() {
@@ -98,47 +122,58 @@
   btnLeitor.addEventListener('click', alternar);
   $('#leitor-seguinte').addEventListener('click', () => tocar((atual + 1) % FAIXAS.length));
 
-  /* ════════════ vídeos ════════════ */
+  /* ════════════ videoclips ════════════ */
+  // o título gigante sai quando o vídeo toca e volta quando pára (estado lido do leitor do YouTube)
+  const quadros = new Map();
   document.querySelectorAll('.video').forEach((b) => b.addEventListener('click', () => {
     if (b.querySelector('iframe')) return;
     audio.pause();
+    const clip = b.closest('.clip');
     const f = document.createElement('iframe');
-    f.src = `https://www.youtube-nocookie.com/embed/${b.dataset.yt}?autoplay=1&rel=0`;
+    f.src = `https://www.youtube-nocookie.com/embed/${b.dataset.yt}?autoplay=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`;
     f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     f.allowFullscreen = true;
     f.title = b.getAttribute('aria-label');
+    f.addEventListener('load', () => {
+      const escutar = () => {
+        try {
+          f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: b.dataset.yt, channel: 'widget' }), '*');
+          f.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'addEventListener', args: ['onStateChange'], id: b.dataset.yt, channel: 'widget' }), '*');
+        } catch (_) {}
+      };
+      escutar(); setTimeout(escutar, 800); setTimeout(escutar, 2500);
+    });
     b.appendChild(f);
-    const clip = b.closest('.clip');
+    quadros.set(f, clip);
     if (clip) clip.classList.add('a-ver');
   }));
+  addEventListener('message', (e) => {
+    if (!/youtube(-nocookie)?\.com$/.test(new URL(e.origin || 'http://x').hostname)) return;
+    let d; try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (_) { return; }
+    const st = d && (d.event === 'onStateChange' ? d.info : d.info && d.info.playerState);
+    if (typeof st !== 'number') return;
+    for (const [f, clip] of quadros) {
+      if (f.contentWindow === e.source && clip) clip.classList.toggle('a-ver', st === 1 || st === 3);
+    }
+  });
 
   /* ════════════ página ════════════ */
-  const topo = $('#top');
-  // o leitor flutuante só aparece depois de se sair do espelho, onde já existe o botão de ouvir
-  function aoRolar() {
-    const longe = scrollY > innerHeight * 0.55;
-    topo.classList.toggle('solid', longe);
-    leitor.classList.toggle('open', iniciado && longe);
-  }
-  addEventListener('scroll', aoRolar, { passive: true });
-  aoRolar();
-
-  // paralaxe discreta: títulos dos videoclips, janela da citação, segunda fotografia
+  // paralaxe discreta: títulos dos videoclips e fotografia da janela
   const pars = [...document.querySelectorAll('[data-par]')];
   let parRaf = 0;
   function paralaxe() {
     parRaf = 0;
     const vh = innerHeight;
     for (const el of pars) {
-      const r = el.parentElement.getBoundingClientRect();
+      const m = el.dataset.par;
+      const ref = m === 'y' ? el.closest('.janela') : el.parentElement;
+      const r = ref.getBoundingClientRect();
       if (r.bottom < -200 || r.top > vh + 200) continue;
       const t = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / vh));
-      const m = el.dataset.par;
       el.style.transform =
         m === 'x' ? `translate3d(${(t * 7).toFixed(2)}vw,0,0)` :
         m === '-x' ? `translate3d(${(-t * 7).toFixed(2)}vw,0,0)` :
-        m === 'y' ? `translate3d(0,${(-9.6 + t * 9).toFixed(2)}%,0)` :
-        `translate3d(0,${(t * -44).toFixed(1)}px,0)`;
+        `translate3d(0,${(-10.9 - t * 10.5).toFixed(2)}%,0)`;
     }
   }
   if (!calmo && pars.length) {
@@ -155,8 +190,129 @@
     rev.forEach((el) => io.observe(el));
   } else rev.forEach((el) => el.classList.add('in'));
 
+  /* ════════════ cordas: Mi maior ════════════ */
+  (function cordas() {
+    const sec = $('#cordas'), cv = $('#cordas-cv');
+    if (!sec || !cv || calmo) return;
+    const c = cv.getContext('2d');
+    const NOTAS = [82.41, 123.47, 164.81, 207.65, 246.94, 329.63]; // E2 B2 E3 G#3 B3 E4
+    const GROSSO = [2.5, 2.2, 1.9, 1.6, 1.35, 1.15];
+    const n = NOTAS.length;
+    const amp = new Float32Array(n), t0 = new Float64Array(n), ultimo = new Float64Array(n).fill(-1e9);
+    const sons = new Array(n);
+    let W = 0, H = 0, dpr = 1, raf = 0, fim = false, py = null;
+    sec.classList.add('js');
+
+    const yCorda = (i) => H / 2 + (i - (n - 1) / 2) * Math.min(34 * dpr, H / 9);
+
+    // Karplus-Strong: uma corda dedilhada sintetizada, sem amostras
+    function som(i) {
+      if (sons[i]) return sons[i];
+      const sr = ctx.sampleRate, N = Math.round(sr / NOTAS[i]);
+      const buf = ctx.createBuffer(1, Math.floor(sr * 4), sr), d = buf.getChannelData(0);
+      let ant = 0;
+      for (let k = 0; k < N; k++) { const r = Math.random() * 2 - 1; d[k] = (r + ant) * 0.5; ant = r; }
+      const perda = 0.9962 - i * 0.0004;
+      for (let k = N; k < d.length; k++) d[k] = perda * 0.5 * (d[k - N] + d[k - N + 1]);
+      return (sons[i] = buf);
+    }
+    function dedilhar(i, forca) {
+      if (performance.now() - ultimo[i] < 90) return;
+      if (contexto() && ctx.state === 'running') {
+        try {
+          const s = ctx.createBufferSource(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+          s.buffer = som(i);
+          lp.type = 'lowpass'; lp.frequency.value = 3800;
+          g.gain.value = 0.26 + forca * 0.16;
+          s.connect(lp); lp.connect(g); g.connect(ctx.destination);
+          s.start();
+        } catch (_) {}
+      }
+      // a hora é registada depois do som: o arranque do áudio pode demorar no primeiro toque
+      const agora = performance.now();
+      ultimo[i] = agora; t0[i] = agora; amp[i] = Math.min(15, 6 + forca * 9);
+      if (!raf) raf = requestAnimationFrame(pintar);
+      // rasgado completo: as seis cordas soaram dentro do mesmo gesto
+      if (!fim && ultimo.every((u) => agora - u < 1500)) {
+        fim = true;
+        setTimeout(() => sec.classList.add('fim'), 650);
+      }
+    }
+
+    function pintar(agora) {
+      raf = 0;
+      c.clearRect(0, 0, W, H);
+      let vivo = false;
+      const x0 = W * 0.06, x1 = W * 0.94, larg = x1 - x0;
+      for (let i = 0; i < n; i++) {
+        const t = (agora - t0[i]) / 1000;
+        const a = amp[i] * Math.exp(-t * (1.5 + i * 0.12)) * dpr;
+        if (a > 0.15) vivo = true;
+        const f = 7 + i * 1.6, y = yCorda(i);
+        const g = c.createLinearGradient(x0, 0, x1, 0);
+        g.addColorStop(0, 'rgba(236,230,218,0)');
+        g.addColorStop(0.22, 'rgba(236,230,218,.55)');
+        g.addColorStop(0.5, 'rgba(236,230,218,.95)');
+        g.addColorStop(0.78, 'rgba(236,230,218,.55)');
+        g.addColorStop(1, 'rgba(236,230,218,0)');
+        // corda desenhada como uma lâmina: fina nas pontas, cheia a meio (como no esboço)
+        const esp = GROSSO[i] * dpr, M = 64, cima = [], baixo = [];
+        for (let k = 0; k <= M; k++) {
+          const u = k / M, sn = Math.sin(Math.PI * u);
+          const dy = a > 0.15 ? a * sn * (Math.cos(t * f * 6.283) + 0.3 * Math.sin(2 * Math.PI * u) * Math.cos(t * f * 12.566)) : 0;
+          const me = esp * (0.22 + 0.78 * Math.pow(sn, 1.6)) / 2;
+          cima.push([x0 + larg * u, y + dy - me]); baixo.push([x0 + larg * u, y + dy + me]);
+        }
+        c.beginPath();
+        cima.forEach(([X, Y], k) => (k ? c.lineTo(X, Y) : c.moveTo(X, Y)));
+        for (let k = M; k >= 0; k--) c.lineTo(baixo[k][0], baixo[k][1]);
+        c.closePath();
+        c.fillStyle = g;
+        c.fill();
+      }
+      if (vivo) raf = requestAnimationFrame(pintar);
+    }
+    function medir() {
+      const r = cv.getBoundingClientRect();
+      if (!r.width) return;
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      W = cv.width = Math.round(r.width * dpr);
+      H = cv.height = Math.round(r.height * dpr);
+      pintar(performance.now());
+    }
+
+    const local = (e) => {
+      const r = cv.getBoundingClientRect();
+      return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr];
+    };
+    cv.addEventListener('pointerdown', (e) => {
+      const [x, y] = local(e);
+      py = y;
+      if (x < W * 0.06 || x > W * 0.94) return;
+      let m = 0;
+      for (let i = 1; i < n; i++) if (Math.abs(yCorda(i) - y) < Math.abs(yCorda(m) - y)) m = i;
+      if (Math.abs(yCorda(m) - y) < 16 * dpr) dedilhar(m, 0.6);
+    });
+    cv.addEventListener('pointermove', (e) => {
+      const [x, y] = local(e);
+      if (py !== null && x > W * 0.06 && x < W * 0.94) {
+        const v = Math.min(1, Math.abs(y - py) / (40 * dpr));
+        for (let i = 0; i < n; i++) {
+          const s = yCorda(i);
+          if (py !== y && (py - s) * (y - s) <= 0) dedilhar(i, v); // <= apanha o ponteiro pousado em cima da corda
+        }
+      }
+      py = y;
+    });
+    ['pointerleave', 'pointercancel'].forEach((t) => cv.addEventListener(t, () => { py = null; }));
+    // quem navega por teclado chega à frase sem ter de tocar
+    sec.querySelector('a').addEventListener('focus', () => { fim = true; sec.classList.add('fim'); });
+
+    if ('ResizeObserver' in window) new ResizeObserver(medir).observe(cv); else addEventListener('resize', medir);
+    medir();
+  })();
+
   /* ════════════ espelho d'água ════════════ */
-  const hero = $('#espelho');
   const cv = $('#agua');
   const titulo = $('#titulo');
   const agua = hero.querySelector('.hero-water');
@@ -168,19 +324,27 @@
 precision highp float;
 uniform sampler2D uCena, uTinta;
 uniform vec2 uRes;
-uniform float uT, uHz, uGrave, uMedio, uAgudo, uFundo;
+uniform float uT, uHz, uGrave, uMedio, uAgudo, uFundo, uGrao;
 uniform vec4 uOnda[10];
 const vec3 FUNDO = vec3(0.106, 0.129, 0.169);
 const vec3 OSSO  = vec3(0.925, 0.902, 0.855);
+
+float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   uv.y = 1.0 - uv.y;
   float asp = uRes.x / uRes.y;
   vec3 cor;
+  // grão de impressão: fixo, com dois tamanhos (grão fino + fibra do papel)
+  vec2 gp = gl_FragCoord.xy / uGrao;
+  float grao = (h21(floor(gp)) - 0.5) * 0.7 + (h21(floor(gp * 0.37) + 7.0) - 0.5) * 0.3;
 
   if (uv.y < uHz) {
     cor = texture2D(uCena, uv).rgb;
+    // pretos ligeiramente levantados e grão, como uma fotografia impressa em papel mate
+    cor = cor * 0.93 + vec3(0.022, 0.026, 0.032);
+    cor += grao * (0.085 + 0.05 * (1.0 - dot(cor, vec3(0.33))));
     cor = mix(cor, FUNDO, uFundo * 0.35);
   } else {
     float d = (uv.y - uHz) / (1.0 - uHz);
@@ -222,7 +386,9 @@ void main(){
     cor += vec3(0.85, 0.9, 1.0) * smoothstep(0.006, 0.0, d) * 0.10;
     cor = mix(cor, FUNDO * vec3(0.8, 0.95, 1.2), uFundo * 0.3);
     // a água dissolve-se no fundo da página, sem linha de fim
-    cor = mix(cor, FUNDO, smoothstep(0.42, 0.96, d));
+    float some = smoothstep(0.42, 0.96, d);
+    cor = mix(cor, FUNDO, some);
+    cor += grao * 0.05 * (1.0 - some);
   }
   gl_FragColor = vec4(cor, 1.0);
 }`;
@@ -248,8 +414,8 @@ void main(){
   gl.enableVertexAttribArray(loc);
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const U = {};
-  ['uCena', 'uTinta', 'uRes', 'uT', 'uHz', 'uGrave', 'uMedio', 'uAgudo', 'uFundo', 'uOnda']
-    .forEach((n) => (U[n] = gl.getUniformLocation(prog, n)));
+  ['uCena', 'uTinta', 'uRes', 'uT', 'uHz', 'uGrave', 'uMedio', 'uAgudo', 'uFundo', 'uGrao', 'uOnda']
+    .forEach((nome) => (U[nome] = gl.getUniformLocation(prog, nome)));
 
   const textura = (unidade) => {
     const t = gl.createTexture();
@@ -268,7 +434,7 @@ void main(){
   const cena = document.createElement('canvas');
   const tinta = document.createElement('canvas');
   const c2 = cena.getContext('2d'), t2 = tinta.getContext('2d');
-  const fotoL = new Image(), fotoM = new Image();
+  const fotoL = new Image(), fotoM = new Image(), letras = new Image();
   let hz = 0.58, W = 0, H = 0, dpr = 1, pronto = false;
 
   function desenhar() {
@@ -302,21 +468,12 @@ void main(){
       c2.restore();
     }
 
-    // tinta: o título, que vive dentro de água
+    // tinta: o lettering do álbum, que vive dentro de água
     t2.clearRect(0, 0, W, H);
-    const tr = titulo.getBoundingClientRect();
-    const fs = parseFloat(getComputedStyle(titulo).fontSize) * dpr;
-    t2.font = `400 ${fs}px Baskervville, Baskerville, Georgia, serif`;
-    t2.textBaseline = 'alphabetic';
-    t2.fillStyle = '#fff';
-    const partes = ['refl', 'e', 'xo'];
-    const larg = partes.map((p) => t2.measureText(p).width);
-    let x = (tr.left - r.left + tr.width / 2) * dpr - (larg[0] + larg[1] + larg[2]) / 2;
-    const y = (tr.top - r.top) * dpr + fs * 0.74;
-    t2.fillText(partes[0], x, y); x += larg[0];
-    t2.save(); t2.translate(x + larg[1], y); t2.scale(-1, 1); t2.fillText('e', 0, 0); t2.restore();
-    x += larg[1];
-    t2.fillText(partes[2], x, y);
+    if (letras.naturalWidth) {
+      const tr = titulo.getBoundingClientRect();
+      t2.drawImage(letras, (tr.left - r.left) * dpr, (tr.top - r.top) * dpr, tr.width * dpr, tr.height * dpr);
+    }
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, tCena);
@@ -326,6 +483,7 @@ void main(){
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tinta);
     gl.uniform2f(U.uRes, W, H);
     gl.uniform1f(U.uHz, hz);
+    gl.uniform1f(U.uGrao, Math.max(1, dpr * 0.9));
     pronto = true;
     if (calmo) pintar(performance.now());
   }
@@ -347,7 +505,7 @@ void main(){
     const r = cv.getBoundingClientRect();
     return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
   };
-  const mergulho = (y) => Math.min(1, Math.max(0, (y - hz) / (1 - hz)));
+  const mergulho = (y) => Math.min(1, Math.max(0, (y - hz) / (1 - hz) * 1.6));
   function corte(prof, rapido) {
     if (!filtro) return;
     const f = prof <= 0 ? 20000 : 20000 * Math.pow(0.018, 0.12 + prof * 0.88);
@@ -397,7 +555,7 @@ void main(){
       mediaGrave += (g - mediaGrave) * 0.04;
       if (g > mediaGrave * 1.22 + 0.05 && agora - ultimoBatida > 430) {
         ultimoBatida = agora;
-        onda(0.5 + (Math.random() - 0.5) * 0.5, hz + (1 - hz) * (0.2 + Math.random() * 0.45), 0.5);
+        onda(0.5 + (Math.random() - 0.5) * 0.5, hz + (1 - hz) * (0.12 + Math.random() * 0.3), 0.5);
       }
     }
     grave += (g - grave) * 0.18; medio += (m - medio) * 0.14; agudo += (a - agudo) * 0.2;
@@ -428,16 +586,16 @@ void main(){
 
   /* arranque */
   const carregar = (img, src) => new Promise((ok) => { img.onload = img.onerror = ok; img.src = src; });
-  const estreito = matchMedia('(max-width: 820px)').matches;
+  const estreito = matchMedia('(max-width: 900px)').matches;
   Promise.all([
     carregar(estreito ? fotoM : fotoL, estreito ? 'assets/img/hero-m.jpg' : 'assets/img/hero.jpg'),
-    document.fonts ? document.fonts.load('400 100px Baskervville').catch(() => {}) : null,
+    carregar(letras, 'assets/img/reflexo.png'),
   ]).then(() => {
     desenhar();
     hero.classList.add('vivo');
     if (!calmo) {
       raf = requestAnimationFrame(ciclo);
-      setTimeout(() => onda(0.5, hz + (1 - hz) * 0.42, 0.9), 900);
+      setTimeout(() => onda(0.5, hz + (1 - hz) * 0.3, 0.9), 900);
     }
     // a outra versão da fotografia só é pedida se a janela mudar de proporção
     carregar(estreito ? fotoL : fotoM, estreito ? 'assets/img/hero.jpg' : 'assets/img/hero-m.jpg').then(desenhar);

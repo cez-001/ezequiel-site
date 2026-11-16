@@ -39,10 +39,10 @@
   <canvas id="agua" aria-hidden="true"></canvas>
 
   <div class="hero-water">
-    <h1 class="title" id="titulo" aria-label="Reflexo">refl<span class="e">e</span>xo</h1>
+    <h1 class="title lettering" id="titulo" aria-label="Reflexo"></h1>
     <p class="eyebrow">álbum de estreia <span aria-hidden="true">·</span> já disponível</p>
     <button class="listen" id="ouvir" type="button" aria-pressed="false">
-      <span class="listen-ring" aria-hidden="true"><svg class="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></span>
+      <span class="listen-ring" aria-hidden="true"><svg class="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.500z"/></svg></span>
       <span class="listen-label">ouvir</span>
     </button>
     <p class="completo" id="completo" aria-live="polite">estás a ouvir excertos <span aria-hidden="true">·</span> <a href="https://linktr.ee/eu.ezequiel" target="_blank" rel="noopener">álbum completo nas plataformas <span aria-hidden="true">↗</span></a></p>
@@ -52,6 +52,14 @@
       <span class="hero-buy-txt"><small>edição física</small><strong>Reflexo em CD</strong></span>
       <span class="hero-buy-go" aria-hidden="true">↗</span>
     </a>
+    <p class="social hero-social">
+      <a href="https://instagram.com/eu.ezequiel" target="_blank" rel="noopener" aria-label="Instagram"><svg class="ico" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="dot" cx="17.1" cy="6.9" r=".9"/></svg></a>
+      <a href="https://open.spotify.com/artist/5ufa0ED4Z9IWeiu7N8a0Gk" target="_blank" rel="noopener" aria-label="Spotify"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7.4 9.7c3.2-.9 6.7-.6 9.5.9M8 12.6c2.5-.7 5.2-.4 7.4.8M8.7 15.3c1.8-.4 3.7-.2 5.3.6"/></svg></a>
+      <a href="https://www.youtube.com/@ezequielsoueu" target="_blank" rel="noopener" aria-label="YouTube"><svg class="ico" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path class="dot" d="M10.2 9.3v5.4l4.7-2.7z"/></svg></a>
+      <a href="https://www.tiktok.com/@eu.ezequiel" target="_blank" rel="noopener" aria-label="TikTok"><svg class="ico" viewBox="0 0 24 24"><path d="M13.5 3.5v11a3.7 3.7 0 1 1-3.7-3.7M13.5 3.5c.3 2.7 2.1 4.5 4.9 4.8"/></svg></a>
+      <a href="https://facebook.com/ezequielsoueu" target="_blank" rel="noopener" aria-label="Facebook"><svg class="ico" viewBox="0 0 24 24"><path d="M14 21v-8h2.7l.5-3.2H14V7.700c0-1 .5-1.700 1.800-1.700h1.500V3.200c-.6-.1-1.400-.2-2.200-.2-2.500 0-4.100 1.500-4.100 4.200v2.600H8.300V13H11v8"/></svg></a>
+      <a href="https://ezequielsoueu.bandcamp.com" target="_blank" rel="noopener" aria-label="Bandcamp"><svg class="ico" viewBox="0 0 24 24"><path d="M2.800 17.500 8.800 6.500h12.400l-6 11z"/></svg></a>
+    </p>
   </div>
 </section>
 
@@ -60,15 +68,15 @@
   <header class="disco-head">
     <div class="reveal">
       <p class="eyebrow">álbum de estreia <span aria-hidden="true">·</span> 2026</p>
-      <h2 class="h-serif">Reflexo</h2>
+      <h2 class="lettering" aria-label="Reflexo"></h2>
     </div>
-    <p class="lead reveal">Nove canções originais, num universo indie folk cantado em português que percorre um território íntimo e atento ao quotidiano. Um disco que não nasce da urgência de dizer tudo, mas da necessidade de dizer o essencial.</p>
+    <p class="nota reveal">Nove canções originais, num universo indie folk cantado em português que percorre um território íntimo e atento ao quotidiano. Um disco que não nasce da urgência de dizer tudo, mas da necessidade de dizer o essencial.</p>
   </header>
 
   <div class="disco-body">
     <figure class="disco-art reveal">
       <img src="assets/img/capa.jpg" width="1000" height="1000" alt="Capa de Reflexo: um espelho pousado nas dunas reflete o mar e um homem a caminhar na praia." loading="lazy">
-      <figcaption>Escrito e composto por Ezequiel. Produção e mistura de Rolando Ferreira. Bateria de Pedro Oliveira.</figcaption>
+      <figcaption>Escrito e composto por Ezequiel. Produção e mistura de Rolando Ferreira. Bateria de Pedro Oliveira. Braguesa de Lisarte Barbosa. Artwork de <a href="https://www.instagram.com/alexandra.fernandes_mbu/" target="_blank" rel="noopener">Alexandra Fernandes</a>.</figcaption>
     </figure>
 
     <div class="disco-side">
@@ -91,17 +99,15 @@
   </div>
 </section>
 
-<!-- ───────────── citação ───────────── -->
-<section class="quote" aria-label="Citação">
-  <div class="quote-window">
-    <picture>
-      <source media="(max-width: 720px)" srcset="assets/img/caminho-m.jpg">
-      <img data-par="y" src="assets/img/caminho.jpg" width="2600" height="966" alt="Ezequiel, de perfil, num caminho de terra entre árvores." loading="lazy">
-    </picture>
-  </div>
-  <blockquote class="wrap reveal">
-    <p data-reflexo="«Durante muito tempo fiquei preso num ciclo de busca por uma perfeição que sabia que nunca iria encontrar.»">«Durante muito tempo fiquei preso num ciclo de busca por uma perfeição que sabia que nunca iria encontrar.»</p>
-    <footer>Ezequiel, sobre <cite>Reflexo</cite></footer>
+<!-- ───────────── janela ───────────── -->
+<section class="janela" aria-label="Citação">
+  <picture>
+    <source media="(max-width: 720px)" srcset="assets/img/guitarra-m.jpg">
+    <img data-par="y" src="assets/img/guitarra.jpg" width="2800" height="1411" alt="Ezequiel a tocar guitarra acústica numa floresta." loading="lazy">
+  </picture>
+  <blockquote>
+    <footer>sobre <cite>Reflexo</cite></footer>
+    <p>durante muito tempo fiquei preso num ciclo de busca por uma perfeição que sabia que nunca iria encontrar</p>
   </blockquote>
 </section>
 
@@ -121,7 +127,6 @@
     </div>
     <h3 class="clip-title" data-par="x" aria-label="Ciclo">Ciclo</h3>
     <div class="clip-meta reveal">
-      <p class="clip-line">«Não é sobre tentar resolver o ciclo, mas sim sobre habitá-lo.»</p>
       <dl>
         <div><dt>realização e edição</dt><dd>Ezequiel</dd></div>
         <div><dt>atriz</dt><dd>Sara Margarida</dd></div>
@@ -143,7 +148,6 @@
     </div>
     <h3 class="clip-title" data-par="-x" aria-label="Portugalidade">Portugalidade</h3>
     <div class="clip-meta reveal">
-      <p class="clip-line">«Sempre a partir de um lugar de amor e admiração, não de crítica vã.»</p>
       <dl>
         <div><dt>realização e edição</dt><dd>Paulo Magalhães</dd></div>
         <div><dt>música e letra</dt><dd>Ezequiel</dd></div>
@@ -155,23 +159,31 @@
 </section>
 
 <!-- ───────────── sobre ───────────── -->
-<section class="sobre wrap" id="sobre">
-  <div class="sobre-fotos">
-    <img class="f1 reveal" src="assets/img/perfil.jpg" width="1300" height="1300" alt="Retrato de Ezequiel, de óculos redondos e camisa clara, a olhar para o lado." loading="lazy">
-    <img class="f2 reveal" data-par="y2" src="assets/img/sentado.jpg" width="900" height="900" alt="Ezequiel sentado entre fetos, a tocar guitarra acústica." loading="lazy">
-  </div>
+<section class="sobre" id="sobre">
   <div class="sobre-texto">
     <h2 class="h-label reveal">sobre</h2>
-    <p class="sobre-frase reveal">Este regresso aos discos não é um começo, mas uma depuração.</p>
-    <div class="sobre-cols reveal">
-      <p>Ezequiel é um cantautor português. A sua música assenta na canção e na palavra, num universo indie folk onde a língua portuguesa é o território natural da escrita e a abordagem criativa assume riscos sem perder intimidade.</p>
-      <p>Depois da experiência com os Quarto C, com quem editou <a href="https://quartoc.bandcamp.com/album/casa-ep" target="_blank" rel="noopener"><em>Casa EP</em></a> (2014), o músico fafense lançou em 2019 o primeiro EP a solo, <a href="https://open.spotify.com/intl-pt/album/3wcM2P4KjpT5juM3JuVv1q" target="_blank" rel="noopener"><em>Homem: oriente</em></a>, inteiramente escrito, gravado e produzido pelo próprio. Pelo meio, um doutoramento e vários projetos ligados ao som para cinema.</p>
-      <p>Em 2026, aos 34 anos, edita <em>Reflexo</em>, o álbum de estreia: um disco que nasce após um período prolongado de silêncio, observação e redefinição pessoal, e que propõe um retrato honesto de quem atravessa mudanças e procura compreender o seu lugar no tempo em que vive.</p>
+    <p class="sobre-lead reveal">Ezequiel é um cantautor português.</p>
+    <div class="sobre-corpo reveal">
+      <p>A sua música assenta na canção e na palavra, num universo indie folk onde a língua portuguesa é o território natural da sua escrita e a abordagem criativa assume riscos sem perder intimidade.</p>
+      <p>Depois da experiência com os Quarto C, com quem editou <a href="https://quartoc.bandcamp.com/album/casa-ep" target="_blank" rel="noopener"><em>Casa EP</em></a> (2014), o músico fafense lançou em 2019 o seu primeiro EP a solo, <a href="https://open.spotify.com/intl-pt/album/3wcM2P4KjpT5juM3JuVv1q" target="_blank" rel="noopener"><em>Homem: oriente</em></a>, inteiramente escrito, gravado e produzido pelo próprio. Pelo meio, um doutoramento e vários projetos ligados ao som para cinema.</p>
+      <p>Em 2026 edita <em>Reflexo</em>, o álbum de estreia. Este regresso aos discos não é um começo, mas uma depuração: um ponto de chegada de vários anos de escrita, pausa e transformação.</p>
     </div>
+    <ul class="obras reveal" aria-label="Discografia">
+      <li><span>2026</span><a href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener"><em>Reflexo</em></a><span>álbum</span></li>
+      <li><span>2019</span><a href="https://open.spotify.com/intl-pt/album/3wcM2P4KjpT5juM3JuVv1q" target="_blank" rel="noopener"><em>Homem: oriente</em></a><span>EP</span></li>
+      <li><span>2014</span><a href="https://quartoc.bandcamp.com/album/casa-ep" target="_blank" rel="noopener"><em>Casa EP</em></a><span>com Quarto C</span></li>
+    </ul>
   </div>
+  <figure class="sobre-foto">
+    <img src="assets/img/perfil.jpg" width="1300" height="1300" alt="Retrato de Ezequiel, de óculos redondos e camisa clara, a olhar para o lado." loading="lazy">
+  </figure>
 </section>
 
-<p class="ps wrap reveal"><span>p.s.</span> o resto da história <a href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">está no disco <span aria-hidden="true">↗</span></a></p>
+<!-- ───────────── cordas ───────────── -->
+<section class="cordas" id="cordas" aria-label="O resto da história está no disco">
+  <canvas id="cordas-cv" aria-hidden="true"></canvas>
+  <p class="ps">o resto da história <a href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">está no disco <span aria-hidden="true">↗</span></a></p>
+</section>
 
 </main>
 
@@ -180,38 +192,36 @@
   <h2 class="h-label">contactos</h2>
   <div class="foot-grid">
     <div>
-      <h3>imprensa</h3>
-      <p><a href="mailto:press@ezequiel.com.pt">press@ezequiel.com.pt</a></p>
-    </div>
-    <div>
-      <h3>booking</h3>
-      <p>Ricardo Carvalho <span class="bar" aria-hidden="true">|</span> Clock.pt<br>
-        <a href="mailto:booking@clock.pt">booking@clock.pt</a><br>
-        <a href="tel:+351962619558">+351 962 619 558</a></p>
-    </div>
-    <div>
       <h3>geral</h3>
       <p><a href="mailto:ola@ezequiel.com.pt">ola@ezequiel.com.pt</a></p>
     </div>
     <div>
-      <h3>seguir</h3>
-      <p class="social">
-        <a href="https://instagram.com/eu.ezequiel" target="_blank" rel="noopener" aria-label="Instagram"><svg class="ico" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="dot" cx="17.1" cy="6.9" r=".9"/></svg></a>
-        <a href="https://open.spotify.com/artist/5ufa0ED4Z9IWeiu7N8a0Gk" target="_blank" rel="noopener" aria-label="Spotify"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7.4 9.7c3.2-.9 6.7-.6 9.5.9M8 12.6c2.5-.7 5.2-.4 7.4.8M8.7 15.3c1.8-.4 3.7-.2 5.3.6"/></svg></a>
-        <a href="https://www.youtube.com/@ezequielsoueu" target="_blank" rel="noopener" aria-label="YouTube"><svg class="ico" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path class="dot" d="M10.2 9.3v5.4l4.7-2.7z"/></svg></a>
-        <a href="https://www.tiktok.com/@eu.ezequiel" target="_blank" rel="noopener" aria-label="TikTok"><svg class="ico" viewBox="0 0 24 24"><path d="M13.5 3.5v11a3.7 3.7 0 1 1-3.7-3.7M13.5 3.5c.3 2.7 2.100 4.500 4.900 4.800"/></svg></a>
-        <a href="https://facebook.com/ezequielsoueu" target="_blank" rel="noopener" aria-label="Facebook"><svg class="ico" viewBox="0 0 24 24"><path d="M14 21v-8h2.700l.5-3.200H14V7.700c0-1 .5-1.700 1.800-1.700h1.500V3.200c-.6-.1-1.400-.2-2.200-.2-2.500 0-4.100 1.500-4.100 4.200v2.600H8.300V13H11v8"/></svg></a>
-        <a href="https://ezequielsoueu.bandcamp.com" target="_blank" rel="noopener" aria-label="Bandcamp"><svg class="ico" viewBox="0 0 24 24"><path d="M2.800 17.500 8.800 6.500h12.400l-6 11z"/></svg></a>
-      </p>
+      <h3>booking</h3>
+      <p>Ricardo Carvalho <span class="bar" aria-hidden="true">|</span> Clock.pt<br>
+        <a href="mailto:booking@clock.pt">booking@clock.pt</a> <span class="bar" aria-hidden="true">|</span> <a href="tel:+351962619558">+351 962 619 558</a></p>
+    </div>
+    <div>
+      <h3>imprensa</h3>
+      <p><a href="mailto:press@ezequiel.com.pt">press@ezequiel.com.pt</a></p>
     </div>
   </div>
-  <p class="legal">© 2026 Ezequiel <span aria-hidden="true">·</span> Fafe, Portugal <span aria-hidden="true">·</span> fotografias de Catarina Milho <span aria-hidden="true">·</span> artwork do álbum por <a href="https://www.instagram.com/alexandra.fernandes_mbu/" target="_blank" rel="noopener">Alexandra Fernandes</a></p>
+  <div class="foot-fim">
+    <p class="legal">© 2026 Ezequiel <span aria-hidden="true">·</span> Fafe, Portugal <span aria-hidden="true">·</span> fotografias de Catarina Milho</p>
+    <p class="social">
+      <a href="https://instagram.com/eu.ezequiel" target="_blank" rel="noopener" aria-label="Instagram"><svg class="ico" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="dot" cx="17.1" cy="6.9" r=".9"/></svg></a>
+      <a href="https://open.spotify.com/artist/5ufa0ED4Z9IWeiu7N8a0Gk" target="_blank" rel="noopener" aria-label="Spotify"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7.4 9.7c3.2-.9 6.7-.6 9.5.9M8 12.6c2.5-.7 5.2-.4 7.4.8M8.7 15.3c1.8-.4 3.7-.2 5.3.6"/></svg></a>
+      <a href="https://www.youtube.com/@ezequielsoueu" target="_blank" rel="noopener" aria-label="YouTube"><svg class="ico" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path class="dot" d="M10.2 9.3v5.4l4.7-2.7z"/></svg></a>
+      <a href="https://www.tiktok.com/@eu.ezequiel" target="_blank" rel="noopener" aria-label="TikTok"><svg class="ico" viewBox="0 0 24 24"><path d="M13.5 3.5v11a3.7 3.7 0 1 1-3.7-3.7M13.5 3.5c.3 2.7 2.1 4.5 4.9 4.8"/></svg></a>
+      <a href="https://facebook.com/ezequielsoueu" target="_blank" rel="noopener" aria-label="Facebook"><svg class="ico" viewBox="0 0 24 24"><path d="M14 21v-8h2.7l.5-3.2H14V7.700c0-1 .5-1.700 1.800-1.700h1.500V3.200c-.6-.1-1.400-.2-2.200-.2-2.500 0-4.100 1.500-4.100 4.200v2.600H8.300V13H11v8"/></svg></a>
+      <a href="https://ezequielsoueu.bandcamp.com" target="_blank" rel="noopener" aria-label="Bandcamp"><svg class="ico" viewBox="0 0 24 24"><path d="M2.800 17.500 8.800 6.500h12.400l-6 11z"/></svg></a>
+    </p>
+  </div>
 </footer>
 
 <!-- ───────────── leitor ───────────── -->
 <aside class="player" id="leitor" aria-label="Leitor de excertos" hidden>
   <div class="player-bar"><i id="progresso"></i></div>
-  <button class="player-btn" id="leitor-play" type="button" aria-label="Pausar"><svg class="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+  <button class="player-btn" id="leitor-play" type="button" aria-label="Pausar"><svg class="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.500z"/></svg></button>
   <p class="player-now" aria-live="polite"><span id="leitor-n">01</span><strong id="leitor-t">Incipit</strong><em>excerto</em></p>
   <button class="player-btn player-next" id="leitor-seguinte" type="button" aria-label="Faixa seguinte">
     <svg viewBox="0 0 24 24"><path d="M6 5.500v13l9.500-6.500zM16.500 5H19v14h-2.500z"/></svg>
