@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ezequiel — Reflexo</title>
+<meta name="description" content="Ezequiel é um cantautor português. Reflexo, o álbum de estreia, já está disponível em CD e digital.">
+<meta name="theme-color" content="#1b212b">
+<link rel="canonical" href="https://www.ezequiel.com.pt/">
+<meta property="og:type" content="music.album">
+<meta property="og:title" content="Ezequiel — Reflexo">
+<meta property="og:description" content="O álbum de estreia do cantautor Ezequiel. Ouve excertos e leva o disco para casa.">
+<meta property="og:url" content="https://www.ezequiel.com.pt/">
+<meta property="og:image" content="https://www.ezequiel.com.pt/assets/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231b212b'/%3E%3Ctext x='30' y='46' text-anchor='middle' font-family='Georgia,serif' font-size='44' fill='%23ece6da'%3Ee.%3C/text%3E%3C/svg%3E">
+<link rel="preload" href="assets/fonts/baskervville.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/plex-300.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="top" id="top">
+  <a class="wordmark" href="#espelho" aria-label="Ezequiel — início">ezequiel.</a>
+  <nav class="nav" aria-label="Secções">
+    <a href="#disco">disco</a>
+    <a href="#videos">vídeos</a>
+    <a href="#sobre">sobre</a>
+    <a href="#contactos">contactos</a>
+  </nav>
+  <a class="buy-link" href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">comprar o disco <span aria-hidden="true">↗</span></a>
+</header>
+
+<main>
+
+<!-- ───────────── espelho d'água ───────────── -->
+<section class="hero" id="espelho">
+  <img class="hero-fallback" src="assets/img/hero.jpg" alt="" aria-hidden="true">
+  <canvas id="agua" aria-hidden="true"></canvas>
+
+  <div class="hero-water">
+    <h1 class="title" id="titulo" aria-label="Reflexo">refl<span class="e">e</span>xo</h1>
+    <p class="eyebrow">álbum de estreia <span aria-hidden="true">·</span> já disponível</p>
+    <div class="hero-actions">
+      <button class="listen" id="ouvir" type="button" aria-pressed="false">
+        <span class="listen-ring" aria-hidden="true">
+          <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+        </span>
+        <span class="listen-label">ouvir</span>
+      </button>
+      <a class="ghost" href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">levar o disco <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+  <p class="hint" id="dica" aria-hidden="true">toca na água <span>·</span> mantém para mergulhar</p>
+</section>
+
+<!-- ───────────── disco ───────────── -->
+<section class="disco wrap" id="disco">
+  <div class="disco-art reveal">
+    <img class="capa" src="assets/img/capa.jpg" width="1000" height="1000" alt="Capa de Reflexo: um espelho pousado nas dunas reflete o mar e um homem a caminhar na praia." loading="lazy">
+    <img class="cd" src="assets/img/cd.jpg" width="1200" height="931" alt="A edição em CD de Reflexo, com a caixa e o disco." loading="lazy">
+  </div>
+
+  <div class="disco-info">
+    <p class="eyebrow reveal">álbum de estreia <span aria-hidden="true">·</span> 2026</p>
+    <h2 class="h-serif reveal">Reflexo</h2>
+    <p class="lead reveal">Nove canções originais, num universo indie folk cantado em português que percorre um território íntimo e atento ao quotidiano. Um disco que não nasce da urgência de dizer tudo, mas da necessidade de dizer o essencial.</p>
+
+    <div class="buy reveal">
+      <a class="btn" href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">
+        <span>Comprar o CD</span><span class="btn-price">10 € <span aria-hidden="true">↗</span></span>
+      </a>
+      <p class="buy-note">CD com booklet e artwork de Alexandra Fernandes. Inclui o álbum digital. Edição física disponível apenas no Bandcamp.</p>
+      <p class="buy-alt">
+        <a href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">edição digital</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://linktr.ee/eu.ezequiel" target="_blank" rel="noopener">plataformas de streaming</a>
+      </p>
+    </div>
+
+    <div class="tracks reveal">
+      <p class="tracks-head"><span>faixas</span><span>excertos de 40 s</span></p>
+      <ol id="faixas"></ol>
+      <p class="credits">Escrito e composto por Ezequiel. Produção e mistura de Rolando Ferreira. Bateria de Pedro Oliveira.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── citação ───────────── -->
+<section class="quote" aria-label="Citação">
+  <img src="assets/img/guitarra.jpg" width="2200" height="1109" alt="Ezequiel a tocar guitarra acústica numa floresta." loading="lazy">
+  <blockquote class="reveal">
+    <p>«Durante muito tempo fiquei preso num ciclo de busca por uma perfeição que sabia que nunca iria encontrar.»</p>
+    <footer>Ezequiel, sobre <cite>Reflexo</cite></footer>
+  </blockquote>
+</section>
+
+<!-- ───────────── vídeos ───────────── -->
+<section class="videos wrap" id="videos">
+  <h2 class="h-label reveal">vídeos</h2>
+  <div class="video-grid">
+    <figure class="reveal">
+      <button class="video" type="button" data-yt="JamFWP6nt40" aria-label="Ver o videoclip de Ciclo">
+        <img src="assets/img/video-ciclo.jpg" width="1280" height="720" alt="" loading="lazy">
+        <span class="video-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+      </button>
+      <figcaption><strong>Ciclo</strong><span>realização de Ezequiel</span></figcaption>
+    </figure>
+    <figure class="reveal">
+      <button class="video" type="button" data-yt="wGd9sb-OkXI" aria-label="Ver o videoclip de Portugalidade">
+        <img src="assets/img/video-portugalidade.jpg" width="1280" height="720" alt="" loading="lazy">
+        <span class="video-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+      </button>
+      <figcaption><strong>Portugalidade</strong><span>realização de Paulo Magalhães</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ───────────── sobre ───────────── -->
+<section class="sobre wrap" id="sobre">
+  <figure class="sobre-foto reveal">
+    <img src="assets/img/retrato.jpg" width="1100" height="1955" alt="Ezequiel, de camisa clara, a tocar guitarra acústica entre árvores." loading="lazy">
+  </figure>
+  <div class="sobre-texto">
+    <h2 class="h-label reveal">sobre</h2>
+    <p class="lead reveal">Ezequiel é um cantautor português. A sua música assenta na canção e na palavra, num universo indie folk onde a língua portuguesa é o território natural da sua escrita e a abordagem criativa assume riscos sem perder intimidade.</p>
+    <p class="reveal">Em 2026 edita <em>Reflexo</em>, o seu álbum de estreia. O disco nasce após um período prolongado de silêncio, observação e redefinição pessoal, acompanhando um percurso marcado por conflito interno, inquietação e amadurecimento. Ao longo do álbum, a experiência pessoal cruza-se com uma observação atenta do mundo que o rodeia, sempre com a palavra como eixo e com uma escrita livre e assumidamente arrojada.</p>
+    <p class="reveal">Depois da experiência com os Quarto C, com quem editou <em>Casa EP</em> (2014), o músico fafense lançou em 2019 o seu primeiro EP a solo, <em>Homem: oriente</em>, inteiramente escrito, gravado e produzido pelo próprio, de uma forma que dificilmente poderia ser mais independente. Pelo meio, um doutoramento e vários projetos ligados ao som para cinema. Agora, aos 34 anos, este regresso aos discos não é um começo, mas uma depuração: um ponto de chegada de vários anos de escrita, pausa e transformação.</p>
+    <p class="reveal">Sem se posicionar como um exercício de intervenção, <em>Reflexo</em> propõe um retrato honesto de quem atravessa mudanças e procura compreender o seu lugar no tempo em que vive, assumindo que a resiliência também se constrói a partir de pequenos gestos e decisões imperfeitas.</p>
+  </div>
+</section>
+
+<!-- ───────────── fecho ───────────── -->
+<section class="fecho wrap">
+  <p class="h-serif reveal">O resto da história<br>está no disco.</p>
+  <a class="btn reveal" href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">
+    <span>Comprar o CD no Bandcamp</span><span class="btn-price" aria-hidden="true">↗</span>
+  </a>
+</section>
+
+</main>
+
+<!-- ───────────── contactos ───────────── -->
+<footer class="foot wrap" id="contactos">
+  <h2 class="h-label">contactos</h2>
+  <div class="foot-grid">
+    <div>
+      <h3>imprensa</h3>
+      <p><a href="mailto:press@ezequiel.com.pt">press@ezequiel.com.pt</a></p>
+    </div>
+    <div>
+      <h3>booking</h3>
+      <p>Ricardo Carvalho, Clock.pt<br>
+        <a href="mailto:booking@clock.pt">booking@clock.pt</a><br>
+        <a href="tel:+351962619558">+351 962 619 558</a></p>
+    </div>
+    <div>
+      <h3>geral</h3>
+      <p><a href="mailto:ola@ezequiel.com.pt">ola@ezequiel.com.pt</a></p>
+    </div>
+    <div>
+      <h3>seguir</h3>
+      <p class="social">
+        <a href="https://instagram.com/eu.ezequiel" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://www.youtube.com/@ezequielsoueu" target="_blank" rel="noopener">YouTube</a>
+        <a href="https://www.tiktok.com/@eu.ezequiel" target="_blank" rel="noopener">TikTok</a>
+        <a href="https://facebook.com/ezequielsoueu" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://ezequielsoueu.bandcamp.com" target="_blank" rel="noopener">Bandcamp</a>
+      </p>
+    </div>
+  </div>
+  <p class="legal">© 2026 Ezequiel <span aria-hidden="true">·</span> Fafe, Portugal <span aria-hidden="true">·</span> fotografias de Catarina Milho <span aria-hidden="true">·</span> artwork de Alexandra Fernandes</p>
+</footer>
+
+<!-- ───────────── leitor ───────────── -->
+<aside class="player" id="leitor" aria-label="Leitor de excertos" hidden>
+  <div class="player-bar"><i id="progresso"></i></div>
+  <button class="player-btn" id="leitor-play" type="button" aria-label="Pausar">
+    <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>
+    <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+  </button>
+  <p class="player-now" aria-live="polite"><span id="leitor-n">01</span><strong id="leitor-t">Incipit</strong><em>excerto</em></p>
+  <button class="player-btn player-next" id="leitor-seguinte" type="button" aria-label="Faixa seguinte">
+    <svg viewBox="0 0 24 24"><path d="M6 5.5v13l9.5-6.5zM16.5 5H19v14h-2.5z"/></svg>
+  </button>
+  <a class="player-buy" href="https://ezequielsoueu.bandcamp.com/album/reflexo" target="_blank" rel="noopener">disco inteiro <span aria-hidden="true">↗</span></a>
+</aside>
+
+<audio id="audio" preload="none"></audio>
+<script src="js/main.js" defer></script>
+</body>
+</html>
