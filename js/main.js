@@ -125,14 +125,22 @@
   /* ════════════ videoclips ════════════ */
   // o título gigante sai quando o vídeo toca e volta quando pára (estado lido do leitor do YouTube)
   const quadros = new Map();
+  const mandar = (f, func) => {
+    try { f.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*'); } catch (_) {}
+  };
   document.querySelectorAll('.video').forEach((b) => b.addEventListener('click', () => {
-    if (b.querySelector('iframe')) return;
-    audio.pause();
     const clip = b.closest('.clip');
+    const existente = b.querySelector('iframe');
+    if (existente) {            // estava em pausa, com o cartaz por cima: retoma
+      audio.pause();
+      mandar(existente, 'playVideo');
+      marcar(b, clip, true);
+      return;
+    }
+    audio.pause();
     const f = document.createElement('iframe');
     f.src = `https://www.youtube-nocookie.com/embed/${b.dataset.yt}?autoplay=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`;
     f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
-    f.allowFullscreen = true;
     f.title = b.getAttribute('aria-label');
     f.addEventListener('load', () => {
       const escutar = () => {
@@ -144,16 +152,26 @@
       escutar(); setTimeout(escutar, 800); setTimeout(escutar, 2500);
     });
     b.appendChild(f);
-    quadros.set(f, clip);
-    if (clip) clip.classList.add('a-ver');
+    quadros.set(f, { b, clip, t: 0 });
+    marcar(b, clip, true);
   }));
+  function marcar(b, clip, aTocar) {
+    b.classList.toggle('a-tocar', aTocar);
+    b.classList.toggle('pausa', !aTocar);
+    if (clip) clip.classList.toggle('a-ver', aTocar);
+  }
   addEventListener('message', (e) => {
-    if (!/youtube(-nocookie)?\.com$/.test(new URL(e.origin || 'http://x').hostname)) return;
+    let host = ''; try { host = new URL(e.origin).hostname; } catch (_) { return; }
+    if (!/youtube(-nocookie)?\.com$/.test(host)) return;
     let d; try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (_) { return; }
     const st = d && (d.event === 'onStateChange' ? d.info : d.info && d.info.playerState);
     if (typeof st !== 'number') return;
-    for (const [f, clip] of quadros) {
-      if (f.contentWindow === e.source && clip) clip.classList.toggle('a-ver', st === 1 || st === 3);
+    for (const [f, q] of quadros) {
+      if (f.contentWindow !== e.source) continue;
+      clearTimeout(q.t);
+      if (st === 1 || st === 3) marcar(q.b, q.clip, true);
+      // a pausa espera um instante: saltar no vídeo passa por «pausa» antes de voltar a tocar
+      else if (st === 2 || st === 0) q.t = setTimeout(() => marcar(q.b, q.clip, false), 420);
     }
   });
 
@@ -166,14 +184,14 @@
     const vh = innerHeight;
     for (const el of pars) {
       const m = el.dataset.par;
-      const ref = m === 'y' ? el.closest('.janela') : el.parentElement;
+      const ref = m === 'y' ? el.closest('picture') : el.parentElement;
       const r = ref.getBoundingClientRect();
       if (r.bottom < -200 || r.top > vh + 200) continue;
       const t = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / vh));
       el.style.transform =
         m === 'x' ? `translate3d(${(t * 7).toFixed(2)}vw,0,0)` :
         m === '-x' ? `translate3d(${(-t * 7).toFixed(2)}vw,0,0)` :
-        `translate3d(0,${(-10.9 - t * 10.5).toFixed(2)}%,0)`;
+        `translate3d(0,${(-13.2 - t * 12.6).toFixed(2)}%,0)`;
     }
   }
   if (!calmo && pars.length) {
@@ -200,7 +218,7 @@
     const n = NOTAS.length;
     const amp = new Float32Array(n), t0 = new Float64Array(n), ultimo = new Float64Array(n).fill(-1e9);
     const sons = new Array(n);
-    let W = 0, H = 0, dpr = 1, raf = 0, fim = false, py = null;
+    let W = 0, H = 0, dpr = 1, raf = 0, fim = false, py = null, pronto = false, armar = 0;
     sec.classList.add('js');
 
     const yCorda = (i) => H / 2 + (i - (n - 1) / 2) * Math.min(34 * dpr, H / 9);
@@ -233,9 +251,9 @@
       ultimo[i] = agora; t0[i] = agora; amp[i] = Math.min(15, 6 + forca * 9);
       if (!raf) raf = requestAnimationFrame(pintar);
       // rasgado completo: as seis cordas soaram dentro do mesmo gesto
-      if (!fim && ultimo.every((u) => agora - u < 1500)) {
+      if (!fim && pronto && ultimo.every((u) => agora - u < 1500)) {
         fim = true;
-        setTimeout(() => sec.classList.add('fim'), 650);
+        setTimeout(() => { if (fim) sec.classList.add('fim'); }, 1700); // deixa o acorde soar antes de se desfazer
       }
     }
 
@@ -306,8 +324,17 @@
     });
     ['pointerleave', 'pointercancel'].forEach((t) => cv.addEventListener(t, () => { py = null; }));
     // quem navega por teclado chega à frase sem ter de tocar
-    sec.querySelector('a').addEventListener('focus', () => { fim = true; sec.classList.add('fim'); });
+    sec.querySelector('a').addEventListener('focus', () => { if (!sec.matches(':hover')) { fim = true; sec.classList.add('fim'); } });
 
+    // as cordas só contam para o rasgado depois de estarem um momento à vista (evita dispará-lo
+    // ao atravessar a página com o rato) e voltam ao sítio sempre que a secção sai do ecrã
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([e]) => {
+        clearTimeout(armar);
+        if (e.isIntersecting) armar = setTimeout(() => { pronto = true; }, 900);
+        else { pronto = false; fim = false; ultimo.fill(-1e9); sec.classList.remove('fim'); }
+      }, { threshold: 0.6 }).observe(sec);
+    } else pronto = true;
     if ('ResizeObserver' in window) new ResizeObserver(medir).observe(cv); else addEventListener('resize', medir);
     medir();
   })();
@@ -343,8 +370,9 @@ void main(){
   if (uv.y < uHz) {
     cor = texture2D(uCena, uv).rgb;
     // pretos ligeiramente levantados e grão, como uma fotografia impressa em papel mate
-    cor = cor * 0.93 + vec3(0.022, 0.026, 0.032);
-    cor += grao * (0.085 + 0.05 * (1.0 - dot(cor, vec3(0.33))));
+    cor = cor * 0.975 + vec3(0.010, 0.012, 0.016);
+    cor = mix(cor, cor * cor * (3.0 - 2.0 * cor), 0.34); // devolve contraste sem queimar
+    cor += grao * (0.052 + 0.03 * (1.0 - dot(cor, vec3(0.33))));
     cor = mix(cor, FUNDO, uFundo * 0.35);
   } else {
     float d = (uv.y - uHz) / (1.0 - uHz);
@@ -388,7 +416,7 @@ void main(){
     // a água dissolve-se no fundo da página, sem linha de fim
     float some = smoothstep(0.42, 0.96, d);
     cor = mix(cor, FUNDO, some);
-    cor += grao * 0.05 * (1.0 - some);
+    cor += grao * 0.035 * (1.0 - some);
   }
   gl_FragColor = vec4(cor, 1.0);
 }`;
