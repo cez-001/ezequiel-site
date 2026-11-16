@@ -70,6 +70,7 @@
     linhas.forEach((l, k) => l.classList.toggle('on', k === i));
     leitor.hidden = false;
     iniciado = true;
+    document.getElementById('espelho').classList.add('a-ouvir');
     requestAnimationFrame(aoRolar);
   }
   function alternar() {
@@ -107,6 +108,8 @@
     f.allowFullscreen = true;
     f.title = b.getAttribute('aria-label');
     b.appendChild(f);
+    const clip = b.closest('.clip');
+    if (clip) clip.classList.add('a-ver');
   }));
 
   /* ════════════ página ════════════ */
@@ -119,6 +122,30 @@
   }
   addEventListener('scroll', aoRolar, { passive: true });
   aoRolar();
+
+  // paralaxe discreta: títulos dos videoclips, janela da citação, segunda fotografia
+  const pars = [...document.querySelectorAll('[data-par]')];
+  let parRaf = 0;
+  function paralaxe() {
+    parRaf = 0;
+    const vh = innerHeight;
+    for (const el of pars) {
+      const r = el.parentElement.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > vh + 200) continue;
+      const t = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / vh));
+      const m = el.dataset.par;
+      el.style.transform =
+        m === 'x' ? `translate3d(${(t * 7).toFixed(2)}vw,0,0)` :
+        m === '-x' ? `translate3d(${(-t * 7).toFixed(2)}vw,0,0)` :
+        m === 'y' ? `translate3d(0,${(-9.6 + t * 9).toFixed(2)}%,0)` :
+        `translate3d(0,${(t * -44).toFixed(1)}px,0)`;
+    }
+  }
+  if (!calmo && pars.length) {
+    addEventListener('scroll', () => { if (!parRaf) parRaf = requestAnimationFrame(paralaxe); }, { passive: true });
+    addEventListener('resize', paralaxe);
+    paralaxe();
+  }
 
   const rev = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window && !calmo) {
@@ -186,7 +213,7 @@ void main(){
     float ry = uHz - (uv.y - uHz);
     vec2 ruv = vec2(uv.x + des.x, clamp(ry + des.y * 1.4, 0.002, uHz - 0.003));
     vec3 refl = texture2D(uCena, ruv).rgb;
-    cor = mix(refl * 0.82, FUNDO, clamp(0.44 + 0.56 * pow(d, 1.2), 0.0, 1.0));
+    cor = mix(refl * 0.82, FUNDO, clamp(0.42 + 0.9 * pow(d, 1.1), 0.0, 1.0));
 
     float tinta = texture2D(uTinta, uv + des * 0.85).a;
     cor = mix(cor, OSSO, tinta * (0.95 - uFundo * 0.25));
@@ -194,6 +221,8 @@ void main(){
     cor += vec3(0.80, 0.86, 1.0) * max(luz, 0.0) * 0.16 * (1.0 - d * 0.5);
     cor += vec3(0.85, 0.9, 1.0) * smoothstep(0.006, 0.0, d) * 0.10;
     cor = mix(cor, FUNDO * vec3(0.8, 0.95, 1.2), uFundo * 0.3);
+    // a água dissolve-se no fundo da página, sem linha de fim
+    cor = mix(cor, FUNDO, smoothstep(0.42, 0.96, d));
   }
   gl_FragColor = vec4(cor, 1.0);
 }`;
@@ -314,7 +343,6 @@ void main(){
 
   /* toque */
   let preso = false, fundo = 0, fundoAlvo = 0, ultimoT = 0, ux = 0, uy = 0;
-  const dica = $('#dica');
   const pos = (e) => {
     const r = cv.getBoundingClientRect();
     return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
@@ -332,7 +360,6 @@ void main(){
     onda(x, y, 1);
     preso = true; fundoAlvo = 0.35 + 0.65 * mergulho(y);
     corte(mergulho(y), true);
-    dica.classList.add('off');
     try { cv.setPointerCapture(e.pointerId); } catch (_) {}
   });
   cv.addEventListener('pointermove', (e) => {
@@ -351,12 +378,19 @@ void main(){
   cv.addEventListener('contextmenu', (e) => e.preventDefault());
 
   /* desenho */
-  let grave = 0, medio = 0, agudo = 0, mediaGrave = 0, ultimoBatida = 0, visivel = true, raf = 0;
+  let grave = 0, medio = 0, agudo = 0, mediaGrave = 0, ultimoBatida = 0, ultimoPulso = 0, visivel = true, raf = 0;
+  const anel = btnOuvir.querySelector('.listen-ring');
   const banda = (a, b) => { let s = 0; for (let i = a; i < b; i++) s += espectro[i]; return s / ((b - a) * 255); };
 
   function pintar(agora) {
     if (!pronto) return;
     let g = 0, m = 0, a = 0;
+    // o botão de ouvir é a fonte do som: de 3,2 em 3,2 s nasce dele uma onda
+    if (!audio.paused && agora - ultimoPulso > 3200) {
+      ultimoPulso = agora;
+      const h = hero.getBoundingClientRect(), b = anel.getBoundingClientRect();
+      onda((b.left + b.width / 2 - h.left) / h.width, (b.top + b.height / 2 - h.top) / h.height, 0.75);
+    }
     if (analisador && !audio.paused) {
       analisador.getByteFrequencyData(espectro);
       g = banda(1, 9); m = banda(9, 80); a = banda(80, 280);
