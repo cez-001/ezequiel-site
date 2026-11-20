@@ -1,5 +1,5 @@
 /* ezequiel. — Reflexo
-   espelho d'água (WebGL) · leitor de excertos (Web Audio) · cordas (Karplus-Strong) */
+   espelho d'água (WebGL) · leitor de excertos (Web Audio) · cordas (Karplus-Strong + sala) */
 (() => {
   'use strict';
 
@@ -208,44 +208,149 @@
     rev.forEach((el) => io.observe(el));
   } else rev.forEach((el) => el.classList.add('in'));
 
-  /* ════════════ cordas: Mi maior ════════════ */
+  /* ════════════ cordas: Mi com nona, aberto ════════════ */
   (function cordas() {
     const sec = $('#cordas'), cv = $('#cordas-cv');
     if (!sec || !cv || calmo) return;
     const c = cv.getContext('2d');
-    const NOTAS = [82.41, 123.47, 164.81, 207.65, 246.94, 329.63]; // E2 B2 E3 G#3 B3 E4
-    const GROSSO = [2.5, 2.2, 1.9, 1.6, 1.35, 1.15];
+    // Mi maior aberto com a nona (0 2 4 1 0 0): E2 B2 F#3 G#3 B3 E4 — o Fá# roça no Sol# e o acorde fica a pairar
+    const NOTAS = [82.41, 123.47, 185.0, 207.65, 246.94, 329.63];
+    const GROSSO = [2.6, 2.2, 1.8, 1.5, 1.05, 0.9];   // calibres de um jogo acústico, de .053 a .012
+    const BORDAO = 4;                                   // as quatro mais graves são bordões de bronze
     const n = NOTAS.length;
     const amp = new Float32Array(n), t0 = new Float64Array(n), ultimo = new Float64Array(n).fill(-1e9);
-    const sons = new Array(n);
+    const sons = NOTAS.map(() => []), vez = new Uint8Array(n), soando = new Array(n);
     let W = 0, H = 0, dpr = 1, raf = 0, fim = false, py = null, pronto = false, armar = 0;
+    let entrou = 0, entrada = 0;
     sec.classList.add('js');
 
     const yCorda = (i) => H / 2 + (i - (n - 1) / 2) * Math.min(34 * dpr, H / 9);
+    const X0 = 0.04, X1 = 0.96;
 
-    // Karplus-Strong: uma corda dedilhada sintetizada, sem amostras
-    function som(i) {
-      if (sons[i]) return sons[i];
-      const sr = ctx.sampleRate, N = Math.round(sr / NOTAS[i]);
-      const buf = ctx.createBuffer(1, Math.floor(sr * 4), sr), d = buf.getChannelData(0);
-      let ant = 0;
-      for (let k = 0; k < N; k++) { const r = Math.random() * 2 - 1; d[k] = (r + ant) * 0.5; ant = r; }
-      const perda = 0.9962 - i * 0.0004;
-      for (let k = N; k < d.length; k++) d[k] = perda * 0.5 * (d[k - N] + d[k - N + 1]);
-      return (sons[i] = buf);
+    /* ── som ── */
+    let bus = null, seco = null, envio = null;
+
+    // sala: resposta a impulso sintetizada, com cauda de ~5 s que vai escurecendo
+    function salaIR() {
+      const sr = ctx.sampleRate, L = Math.floor(sr * 6.2), pre = Math.floor(sr * 0.03);
+      const ir = ctx.createBuffer(2, L, sr);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        let lp = 0;
+        for (let k = pre; k < L; k++) {
+          const t = (k - pre) / sr;
+          const fecho = 0.35 + 0.55 * Math.min(1, t / 4);
+          lp += (1 - fecho) * ((Math.random() * 2 - 1) - lp);
+          d[k] = lp * Math.exp(-t * 6.9 / 5.2) * Math.min(1, t / 0.08);
+        }
+        [0.012, 0.019, 0.029, 0.043, 0.058].forEach((t, j) => {
+          const k = pre + Math.floor((t + ch * 0.0035) * sr);
+          if (k < L) d[k] += (0.22 - j * 0.03) * (j % 2 ? -1 : 1);
+        });
+      }
+      return ir;
     }
+
+    function cadeia() {
+      if (bus) return true;
+      if (!contexto()) return false;
+      try {
+        const filtro = (tipo, f, q, g) => {
+          const b = ctx.createBiquadFilter();
+          b.type = tipo; b.frequency.value = f; b.Q.value = q; if (g) b.gain.value = g;
+          return b;
+        };
+        bus = ctx.createGain();
+        // caixa de madeira: dois modos graves do tampo e agudos macios
+        const tampo = filtro('peaking', 105, 1.4, 4), caixa = filtro('peaking', 230, 1.8, 2.5);
+        const macio = filtro('highshelf', 2400, 0.7, -7), tecto = filtro('lowpass', 5200, 0.5);
+        seco = ctx.createGain(); seco.gain.value = 0.9;
+        envio = ctx.createGain(); envio.gain.value = 0.3;
+        const sala = ctx.createConvolver(); sala.buffer = salaIR();
+        const molhado = ctx.createGain(); molhado.gain.value = 0.75;
+        bus.connect(tampo); tampo.connect(caixa); caixa.connect(macio); macio.connect(tecto);
+        tecto.connect(seco); seco.connect(ctx.destination);
+        tecto.connect(envio); envio.connect(sala); sala.connect(molhado); molhado.connect(ctx.destination);
+      } catch (_) { bus = null; return false; }
+      return true;
+    }
+
+    // Karplus-Strong afinado (atraso fracionário por passa-tudo) e dedilhado com a polpa do polegar
+    function sintetizar(i) {
+      const sr = ctx.sampleRate, f = NOTAS[i];
+      const P = sr / f - 1;                                  // o filtro de perda atrasa uma amostra
+      const Ni = Math.floor(P - 0.3), D = P - Ni, C = (1 - D) / (1 + D);
+      const T60 = 6.5 - i * 0.6;                             // os bordões soam mais tempo
+      const g = Math.pow(10, -3 / (f * T60));
+      const L = Math.floor(sr * (T60 + 0.4));
+      const buf = ctx.createBuffer(1, L, sr), out = buf.getChannelData(0);
+      // excitação: corda puxada perto da boca (forma triangular) com um pouco de ruído, tudo amaciado
+      const exc = new Float32Array(Ni), pico = (0.18 + Math.random() * 0.05) * Ni;
+      let s = 0, media = 0;
+      for (let k = 0; k < Ni; k++) {
+        const tri = k < pico ? k / pico : (Ni - k) / (Ni - pico);
+        s += (tri * 0.85 + (Math.random() * 2 - 1) * 0.22 - s) * 0.42;
+        exc[k] = s; media += s;
+      }
+      media /= Ni;
+      for (let k = 0; k < Ni; k++) exc[k] -= media;
+      const linha = new Float32Array(Ni);
+      let w = 0, x1 = 0, x2 = 0, ax = 0, ay = 0, max = 0;
+      for (let k = 0; k < L; k++) {
+        const x = linha[w];
+        const lf = g * (0.25 * x + 0.5 * x1 + 0.25 * x2); // perda: os agudos morrem primeiro
+        x2 = x1; x1 = x;
+        const y = C * lf + ax - C * ay; ax = lf; ay = y;
+        const v = y + (k < Ni ? exc[k] : 0);
+        linha[w] = v; out[k] = v;
+        if (Math.abs(v) > max) max = Math.abs(v);
+        w = w + 1 === Ni ? 0 : w + 1;
+      }
+      const esc = 0.5 / (max || 1), cauda = Math.floor(sr * 0.3);
+      for (let k = 0; k < L; k++) out[k] *= esc * Math.min(1, (L - k) / cauda);
+      return buf;
+    }
+
+    function tocarCorda(i, forca) {
+      if (!cadeia() || ctx.state !== 'running') return;
+      try {
+        vez[i] ^= 1;
+        const buf = sons[i][vez[i]] || (sons[i][vez[i]] = sintetizar(i));
+        const s = ctx.createBufferSource(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+        const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+        s.buffer = buf;
+        lp.type = 'lowpass'; lp.frequency.value = 1700 + forca * 2400; lp.Q.value = 0.4;
+        g.gain.value = 0.32 + forca * 0.22;
+        s.connect(lp); lp.connect(g);
+        if (pan) { pan.pan.value = (i - (n - 1) / 2) * 0.1; g.connect(pan); pan.connect(bus); } else g.connect(bus);
+        // voltar a tocar a mesma corda abafa a vibração anterior, como na guitarra
+        const ant = soando[i];
+        if (ant) try { ant.gain.setTargetAtTime(0, ctx.currentTime, 0.015); ant.src.stop(ctx.currentTime + 0.1); } catch (_) {}
+        soando[i] = { gain: g.gain, src: s };
+        s.start();
+      } catch (_) {}
+    }
+
+    const rampa = (p, v, quando, tau) => { p.cancelScheduledValues(quando); p.setTargetAtTime(v, quando, tau); };
+    function abrirSala() {           // o rasgado completo manda mais som para a sala
+      if (bus) rampa(envio.gain, 0.7, ctx.currentTime, 0.25);
+    }
+    function soltarSala() {          // a frase aparece: as cordas calam-se e fica o eco da sala
+      if (!bus) return;
+      const t = ctx.currentTime;
+      rampa(seco.gain, 0, t, 0.5);
+      rampa(envio.gain, 0, t + 0.9, 0.5);
+    }
+    function reporSala() {
+      if (!bus) return;
+      const t = ctx.currentTime;
+      rampa(seco.gain, 0.9, t, 0.05);
+      rampa(envio.gain, 0.3, t, 0.05);
+    }
+
     function dedilhar(i, forca) {
       if (performance.now() - ultimo[i] < 90) return;
-      if (contexto() && ctx.state === 'running') {
-        try {
-          const s = ctx.createBufferSource(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
-          s.buffer = som(i);
-          lp.type = 'lowpass'; lp.frequency.value = 3800;
-          g.gain.value = 0.26 + forca * 0.16;
-          s.connect(lp); lp.connect(g); g.connect(ctx.destination);
-          s.start();
-        } catch (_) {}
-      }
+      tocarCorda(i, forca);
       // a hora é registada depois do som: o arranque do áudio pode demorar no primeiro toque
       const agora = performance.now();
       ultimo[i] = agora; t0[i] = agora; amp[i] = Math.min(15, 6 + forca * 9);
@@ -253,41 +358,86 @@
       // rasgado completo: as seis cordas soaram dentro do mesmo gesto
       if (!fim && pronto && ultimo.every((u) => agora - u < 1500)) {
         fim = true;
-        setTimeout(() => { if (fim) sec.classList.add('fim'); }, 1700); // deixa o acorde soar antes de se desfazer
+        abrirSala();
+        setTimeout(() => { if (fim) { sec.classList.add('fim'); soltarSala(); } }, 1700); // deixa o acorde soar antes de se desfazer
       }
     }
 
+    /* ── desenho: cordas de metal sobre o fundo ── */
+    const suave = (x) => x * x * (3 - 2 * x);
+    function traco(pts, desvio) {
+      c.beginPath();
+      for (let k = 0; k < pts.length; k += 2) (k ? c.lineTo : c.moveTo).call(c, pts[k], pts[k + 1] + desvio);
+    }
     function pintar(agora) {
       raf = 0;
       c.clearRect(0, 0, W, H);
-      let vivo = false;
-      const x0 = W * 0.06, x1 = W * 0.94, larg = x1 - x0;
+      if (!W) return;
+      if (entrou) entrada = Math.min(1, (agora - entrou) / 2800);
+      let vivo = entrou && entrada < 1;
+      const x0 = W * X0, larg = W * (X1 - X0), M = 80;
+      // luz a vir de cima e da esquerda: o brilho corre ao longo da corda e apaga-se nas pontas
+      const luz = c.createLinearGradient(x0, 0, x0 + larg, 0);
+      luz.addColorStop(0, 'rgba(255,246,228,0)');
+      luz.addColorStop(0.38, 'rgba(255,246,228,.85)');
+      luz.addColorStop(0.62, 'rgba(255,246,228,.55)');
+      luz.addColorStop(1, 'rgba(255,246,228,.1)');
+      c.lineCap = 'round'; c.lineJoin = 'round';
       for (let i = 0; i < n; i++) {
+        // entram uma a uma, das graves para as agudas, a emergir do fundo
+        const vis = suave(Math.max(0, Math.min(1, entrada * 1.5 - i * 0.09)));
+        if (vis <= 0) continue;
         const t = (agora - t0[i]) / 1000;
         const a = amp[i] * Math.exp(-t * (1.5 + i * 0.12)) * dpr;
         if (a > 0.15) vivo = true;
-        const f = 7 + i * 1.6, y = yCorda(i);
-        const g = c.createLinearGradient(x0, 0, x1, 0);
-        g.addColorStop(0, 'rgba(236,230,218,0)');
-        g.addColorStop(0.22, 'rgba(236,230,218,.55)');
-        g.addColorStop(0.5, 'rgba(236,230,218,.95)');
-        g.addColorStop(0.78, 'rgba(236,230,218,.55)');
-        g.addColorStop(1, 'rgba(236,230,218,0)');
-        // corda desenhada como uma lâmina: fina nas pontas, cheia a meio (como no esboço)
-        const esp = GROSSO[i] * dpr, M = 64, cima = [], baixo = [];
+        const f = 7 + i * 1.6, y = yCorda(i), esp = Math.max(0.9, GROSSO[i] * dpr);
+        const pts = new Float32Array((M + 1) * 2);
         for (let k = 0; k <= M; k++) {
           const u = k / M, sn = Math.sin(Math.PI * u);
-          const dy = a > 0.15 ? a * sn * (Math.cos(t * f * 6.283) + 0.3 * Math.sin(2 * Math.PI * u) * Math.cos(t * f * 12.566)) : 0;
-          const me = esp * (0.22 + 0.78 * Math.pow(sn, 1.6)) / 2;
-          cima.push([x0 + larg * u, y + dy - me]); baixo.push([x0 + larg * u, y + dy + me]);
+          const dy = a > 0.15 ? 0.55 * a * sn * (Math.cos(t * f * 6.283) + 0.3 * Math.sin(2 * Math.PI * u) * Math.cos(t * f * 12.566)) : 0;
+          pts[k * 2] = x0 + larg * u; pts[k * 2 + 1] = y + dy;
         }
-        c.beginPath();
-        cima.forEach(([X, Y], k) => (k ? c.lineTo(X, Y) : c.moveTo(X, Y)));
-        for (let k = M; k >= 0; k--) c.lineTo(baixo[k][0], baixo[k][1]);
-        c.closePath();
-        c.fillStyle = g;
-        c.fill();
+        c.globalAlpha = vis;
+        // a corda a vibrar vê-se como um véu desfocado entre os dois extremos
+        if (a > 0.6) {
+          c.beginPath();
+          for (let k = 0; k <= M; k++) c.lineTo(pts[k * 2], y - a * Math.sin(Math.PI * k / M));
+          for (let k = M; k >= 0; k--) c.lineTo(pts[k * 2], y + a * Math.sin(Math.PI * k / M));
+          c.fillStyle = i < BORDAO ? 'rgba(196,160,112,.07)' : 'rgba(205,210,216,.07)';
+          c.fill();
+        }
+        // corpo, com a sombra projetada no tampo
+        traco(pts, 0);
+        c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 4 * dpr; c.shadowOffsetY = 3.5 * dpr;
+        c.strokeStyle = i < BORDAO ? 'rgb(128,98,64)' : 'rgb(150,155,162)';
+        c.lineWidth = esp;
+        c.stroke();
+        c.shadowColor = 'transparent';
+        // enrolamento dos bordões: espiras finas sobre o núcleo
+        if (i < BORDAO) {
+          c.setLineDash([0.8 * dpr, 0.75 * dpr]);
+          c.strokeStyle = 'rgba(48,34,20,.5)';
+          c.lineWidth = esp * 0.9;
+          c.stroke();
+          c.setLineDash([]);
+        }
+        // reflexo especular no dorso
+        traco(pts, -esp * 0.22);
+        c.strokeStyle = luz;
+        c.lineWidth = Math.max(0.5 * dpr, esp * 0.34);
+        c.stroke();
       }
+      c.globalAlpha = 1;
+      // as pontas fundem-se no fundo da página
+      const mascara = c.createLinearGradient(x0, 0, x0 + larg, 0);
+      mascara.addColorStop(0, 'rgba(0,0,0,0)');
+      mascara.addColorStop(0.16, 'rgba(0,0,0,1)');
+      mascara.addColorStop(0.84, 'rgba(0,0,0,1)');
+      mascara.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalCompositeOperation = 'destination-in';
+      c.fillStyle = mascara;
+      c.fillRect(0, 0, W, H);
+      c.globalCompositeOperation = 'source-over';
       if (vivo) raf = requestAnimationFrame(pintar);
     }
     function medir() {
@@ -306,14 +456,14 @@
     cv.addEventListener('pointerdown', (e) => {
       const [x, y] = local(e);
       py = y;
-      if (x < W * 0.06 || x > W * 0.94) return;
+      if (x < W * X0 || x > W * X1) return;
       let m = 0;
       for (let i = 1; i < n; i++) if (Math.abs(yCorda(i) - y) < Math.abs(yCorda(m) - y)) m = i;
       if (Math.abs(yCorda(m) - y) < 16 * dpr) dedilhar(m, 0.6);
     });
     cv.addEventListener('pointermove', (e) => {
       const [x, y] = local(e);
-      if (py !== null && x > W * 0.06 && x < W * 0.94) {
+      if (py !== null && x > W * X0 && x < W * X1) {
         const v = Math.min(1, Math.abs(y - py) / (40 * dpr));
         for (let i = 0; i < n; i++) {
           const s = yCorda(i);
@@ -326,15 +476,20 @@
     // quem navega por teclado chega à frase sem ter de tocar
     sec.querySelector('a').addEventListener('focus', () => { if (!sec.matches(':hover')) { fim = true; sec.classList.add('fim'); } });
 
-    // as cordas só contam para o rasgado depois de estarem um momento à vista (evita dispará-lo
-    // ao atravessar a página com o rato) e voltam ao sítio sempre que a secção sai do ecrã
+    // as cordas emergem do fundo quando a secção entra no ecrã; só contam para o rasgado depois de
+    // estarem um momento à vista (evita dispará-lo ao atravessar a página) e voltam ao sítio ao sair
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(([e]) => {
+        if (e.isIntersecting) {
+          if (!entrou) { entrou = performance.now(); if (!raf) raf = requestAnimationFrame(pintar); }
+        } else { entrou = 0; entrada = 0; pintar(performance.now()); }
+      }, { threshold: 0.25 }).observe(sec);
+      new IntersectionObserver(([e]) => {
         clearTimeout(armar);
-        if (e.isIntersecting) armar = setTimeout(() => { pronto = true; }, 900);
-        else { pronto = false; fim = false; ultimo.fill(-1e9); sec.classList.remove('fim'); }
+        if (e.isIntersecting) armar = setTimeout(() => { pronto = true; if (ctx) cadeia(); }, 900);
+        else { pronto = false; fim = false; ultimo.fill(-1e9); sec.classList.remove('fim'); reporSala(); }
       }, { threshold: 0.6 }).observe(sec);
-    } else pronto = true;
+    } else { pronto = true; entrou = performance.now(); }
     if ('ResizeObserver' in window) new ResizeObserver(medir).observe(cv); else addEventListener('resize', medir);
     medir();
   })();
